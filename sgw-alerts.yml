@@ -1,0 +1,55 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Provision the required resources for storage gateway 'AWS SNS for CloudWatch alarm email notifications'.
+  Wait for creation to complete before testing.
+Parameters:
+  EmailAddress:
+    Type: String
+    Description: The email address to use for alarm notifications.
+  StorageGatewayid:
+    Type: String
+    Description: This is storage gateway id.
+Resources:
+  Alarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: StorageGatewayAlert
+      AlarmActions:
+        - !Ref AlarmSNSTopic
+      Metrics:
+        id: cacheUsed
+        MetricStat:
+          Metric:
+            Namespace: AWS/StorageGateway          
+            MetricName: CachePercentUsed
+            Dimensions:
+            - Name: GatewayId
+              Value: !Ref StorageGatewayid
+            Period: 30
+            Stat: Average
+            ComparisonOperator: GreaterThanOrEqualToThreshold
+            EvaluationPeriods: 3
+            Threshold: '90'
+            TreatMissingData: notBreaching
+        id: BufferSize
+        MetricStat:
+          Metric:
+            Namespace: AWS/StorageGateway          
+            MetricName: UploadBufferPercentUsed
+            Dimensions:
+            - Name: GatewayId
+              Value: !Ref StorageGatewayid
+           Period: 30
+           Stat: Average
+           ComparisonOperator: GreaterThanOrEqualToThreshold
+           EvaluationPeriods: 3
+           Threshold: '90'
+           TreatMissingData: notBreaching 
+  AlarmSNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: AlarmTopic
+      Subscription:
+        - Protocol: email
+          Endpoint: !Ref EmailAddress            
+        
+  
